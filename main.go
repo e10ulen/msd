@@ -39,6 +39,7 @@ func main() {
 	cfg.Authenticate(context.Background(), email, pass)
 	timelineMastodon(app, cfg)
 	tootMastodon(app, cfg)
+	streamMastodon(app, cfg)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 }
 
@@ -63,6 +64,35 @@ func timelineMastodon(app *kingpin.Application, cfg *m.Client) {
 		for i := len(timeline) - 1; i >= 0; i-- {
 			displayStatus(timeline[i])
 		}
+		return nil
+	})
+}
+
+//	Stram対応箇所
+func streamMastodon(app *kingpin.Application, cfg *m.Client) {
+	cmd := app.Command("ltl", "Streaming Local TimeLine")
+	cmd.Action(func(c *kingpin.ParseContext) error {
+		wsc := cfg.NewWSClient()
+		q, err := wsc.StreamingWSPublic(context.Background(), true)
+		if err != nil {
+			return err
+		}
+		green := color.New(color.FgHiGreen).SprintFunc()
+		red := color.New(color.FgHiRed).SprintFunc()
+		for e := range q {
+			if t, ok := e.(*m.UpdateEvent); ok {
+				s := t.Status.Content
+				s = strings.Replace(s, "<p>", "", -1)
+				s = strings.Replace(s, "</p>", "", -1)
+				fmt.Printf("%s %s %s\n",
+					red(t.Status.Account.Acct),
+					green(t.Status.Account.DisplayName),
+					s,
+				)
+
+			}
+		}
+
 		return nil
 	})
 }
