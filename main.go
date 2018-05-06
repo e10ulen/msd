@@ -1,3 +1,5 @@
+//	Package Overview.
+//	mastodon cli tool
 package main
 
 import (
@@ -16,6 +18,8 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
+//	MainFunction
+//	ここで設定ファイルを読み込み、各コマンドに読み込んだ設定を渡している。
 func main() {
 	colog.Register()
 	app := kingpin.New("md", "a Mastodon Application")
@@ -40,9 +44,11 @@ func main() {
 	timelineMastodon(app, cfg)
 	tootMastodon(app, cfg)
 	streamMastodon(app, cfg)
+	updatenameMastodon(app, cfg)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 }
 
+//	一言トゥートする事ができる。ダブルクオーテーションをつける必要はない。
 func tootMastodon(app *kingpin.Application, cfg *m.Client) {
 	cmd := app.Command("toot", "toot to mastodon")
 	text := cmd.Arg("text", "text to toot").Strings()
@@ -54,6 +60,8 @@ func tootMastodon(app *kingpin.Application, cfg *m.Client) {
 		return nil
 	})
 }
+
+//	20件程トゥートを取得し整形し描画する。
 func timelineMastodon(app *kingpin.Application, cfg *m.Client) {
 	cmd := app.Command("tl", "TimeLine for mastodon")
 	cmd.Action(func(c *kingpin.ParseContext) error {
@@ -65,6 +73,27 @@ func timelineMastodon(app *kingpin.Application, cfg *m.Client) {
 			displayStatus(timeline[i])
 		}
 		return nil
+	})
+}
+
+func updatenameMastodon(app *kingpin.Application, cfg *m.Client) {
+
+	cmd := app.Command("un", "Update Name")
+	name := cmd.Arg("text", "username update").Strings()
+	cmd.Action(func(c *kingpin.ParseContext) error {
+		account, err := cfg.AccountUpdate(context.Background(), &m.Profile{})
+		if err != nil {
+			return err
+		}
+
+		log.Print("w: ", account.DisplayName)
+		log.Print("d: ", name)
+		log.Print("w: ", account)
+		//user := strings.Join(*name, " ")
+		//account.DisplayName = user
+
+		return nil
+
 	})
 }
 
